@@ -8,7 +8,7 @@ router = Router()
 
 
 @router.message(UserState.name)
-async def get_username(message: types.Message, state: FSMContext):
+async def get_username(message: types.Message, state: FSMContext) -> None:
     if message.text.isalpha():
         await state.update_data(username=message.text)
         data = await state.get_data()
@@ -18,12 +18,9 @@ async def get_username(message: types.Message, state: FSMContext):
         await message.answer(
             f'Приятно познакомится, {data["username"]}. Начнем работу. '
             f'\nВыберите действие для бота из кнопок ниже:',
-            reply_markup=def_keyboard,
-            input_field_placeholder='Выберите один из вариантов действий...'
+            reply_markup=def_keyboard
         )
     else:
         await message.answer('Некорректный ввод имени. Оно должно состоять только из букв. '
                              'Попробуйте еще раз.')
         await state.set_state(UserState.name)
-
-

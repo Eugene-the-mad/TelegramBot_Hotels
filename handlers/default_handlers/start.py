@@ -1,3 +1,4 @@
+from typing import Optional
 from aiogram import types, Router
 from aiogram.filters.command import Command
 from aiogram.fsm.context import FSMContext
@@ -9,14 +10,17 @@ router = Router()
 
 
 @router.message(Command('start'))
-async def cmd_start(message: types.Message, state: FSMContext):
-    user_name = check_name(message.from_user.id)
+async def cmd_start(message: types.Message, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться по команде /start.
+    Проверяет на наличие нового пользователя, выводит окно приветствия для начала работы бота.
+    """
+    user_name: Optional[tuple[str]] = check_name(message.from_user.id)
     if user_name:
         await message.answer(
             f'Привет, {user_name[0]}. Рад снова Вас видеть. Начнем работу.'
             f'\nВыберите действие для бота из кнопок ниже:',
-            reply_markup=def_keyboard,
-            input_field_placeholder='Выберите один из вариантов действий...'
+            reply_markup=def_keyboard
             )
     else:
         await message.answer(

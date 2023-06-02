@@ -2,13 +2,10 @@ import sqlite3 as sq
 from os import path
 
 
-def create_table():
+def create_table() -> None:
     path_db = path.join(path.abspath(''), 'database/user.db')
     with sq.connect(path_db) as con:
         cur = con.cursor()
-
-        #cur.execute("DROP TABLE IF EXISTS users")  # Временное, УДАЛИТЬ!!!
-
         cur.execute("""CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             log_name TEXT NOT NULL,

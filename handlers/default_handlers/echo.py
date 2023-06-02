@@ -1,14 +1,16 @@
 from aiogram import Router
-from aiogram.filters import Text
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
+from handlers.default_handlers.start import cmd_start
 
 router = Router()
 
 
-@router.message(Text)   # НУЖНО ДОДУМАТЬ
-async def bot_echo(message: Message):
-    await message.answer(
-        f"Эхо без состояния или фильтра.\n"
-        f"Сообщение: {message.text}"
-    )
+@router.message()
+async def bot_echo(message: Message, state: FSMContext) -> None:
+    """
+    Эхо-функция. Срабатывает на любой текст пользователя, если он не выбрал режим работы бота.
+    Запускает функцию cmd_start.
+    """
 
+    await cmd_start(message, state)

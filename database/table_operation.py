@@ -1,8 +1,9 @@
 import sqlite3 as sq
 from os import path
+from typing import Optional
 
 
-def check_name(user_id):
+def check_name(user_id: int) -> Optional[tuple[str]]:
     path_db = path.join(path.abspath(''), 'database/user.db')
     with sq.connect(path_db) as con:
         cur = con.cursor()
@@ -14,7 +15,7 @@ def check_name(user_id):
             return result
 
 
-def insert_user_data(data_user):
+def insert_user_data(data_user: tuple[str, int, str]) -> None:
     path_db = path.join(path.abspath(''), 'database/user.db')
     with sq.connect(path_db) as con:
         cur = con.cursor()

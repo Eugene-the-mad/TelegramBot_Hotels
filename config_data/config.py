@@ -4,7 +4,8 @@ from dotenv import find_dotenv
 
 class Settings(BaseSettings):
     bot_token: SecretStr
-    rapid_api_key: SecretStr
+    x_rapid_api_key: SecretStr
+    currencyconverterapi: SecretStr
 
     class Config:
         env_file = find_dotenv()
@@ -19,7 +20,7 @@ else:
 DEFAULT_COMMANDS = (
     ('/low', "поиск отелей по наименьшей цене"),
     ('/high', "поиск отелей по наибольшей цене"),
-    ('/custom', "поиск отелей по диапазону цен"),
+    ('/custom', "поиск отелей по параметрам пользователя"),
     ('/history', "отображение истории запросов пользователя"),
     ('/help', "описание команд данного бота")
 )
