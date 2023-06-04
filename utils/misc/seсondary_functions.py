@@ -85,7 +85,6 @@ def hotels_info(values: dict[str, Any], c_in: datetime, c_out: datetime) -> dict
                             отфильтрованные значения в виде списка.
     """
     all_hotels = values['data']['propertySearch']['properties']
-    print(all_hotels)
     all_hotels_info = dict()
     total_live = (c_out - c_in).days
     for val in all_hotels:
@@ -109,6 +108,10 @@ def hotels_info(values: dict[str, Any], c_in: datetime, c_out: datetime) -> dict
         if total_price:
             total_price = total_price.group()
             total_price = int(re.sub('[^0-9]', '', total_price))
+            # ловим возможную некорректную стоимость за период бронирования: предполагаем, что отель может
+            # максимально дать 50% скидку за длительное проживание.
+            if (total_price / total_live) < (price / 2):
+                total_price = total_live * price
         else:
             total_price = total_live * price
         all_hotels_info[name_hotel] = [price, total_price, destination]

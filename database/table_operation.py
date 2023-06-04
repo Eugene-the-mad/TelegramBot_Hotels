@@ -29,3 +29,14 @@ async def insert_user_data(data_user: tuple[str, int, str]) -> None:
     async with sq.connect(path_db) as con:
         await con.execute(insert_request, data_user)
         await con.commit()
+
+
+async def insert_user_action(data_user: tuple[str, int, str]) -> None:
+    path_db = path.join(path.abspath(''), 'database/user.db')
+    insert_request = """
+        INSERT INTO users_action(log_name, user_bot_id, user_name) 
+        VALUES(?, ?, ?)  
+    """
+    async with sq.connect(path_db) as con:
+        await con.execute(insert_request, data_user)
+        await con.commit()
