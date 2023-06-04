@@ -13,7 +13,7 @@ async def get_username(message: types.Message, state: FSMContext) -> None:
         await state.update_data(username=message.text)
         data = await state.get_data()
         send_data = (message.from_user.first_name, message.from_user.id, data['username'])
-        insert_user_data(send_data)
+        await insert_user_data(send_data)
         await state.clear()
         await message.answer(
             f'Приятно познакомится, {data["username"]}. Начнем работу. '

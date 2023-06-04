@@ -326,7 +326,7 @@ async def check_search_info(callback: types.CallbackQuery, state: FSMContext) ->
         f'Адрес: <b>{policies(detail_hotel["data"]["propertyInfo"]["summary"]["location"]["address"]["addressLine"])}</b>.\n'
         f'Цена за номер: <b>{round(all_data["all_hotels_info"][name_hotel][0] * now_rate, 2)} руб</b>.\n'
         f'Цена за указанные период: <b>{round(all_data["all_hotels_info"][name_hotel][1] * now_rate, 2)} руб</b>.\n'
-        f'Расстояние до центра города: <b>{all_data["all_hotels_info"][name_hotel][2]} м</b>.'
+        f'Расстояние до центра города: <b>{all_data["all_hotels_info"][name_hotel][2]}</b>.'
     )
 
     await callback.message.answer(

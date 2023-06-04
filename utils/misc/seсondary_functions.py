@@ -44,11 +44,15 @@ def beautiful_date(date: datetime) -> str:
         return date
 
 
-def found_hotels(values: dict[Any, Any], num_h: Optional[str] = None) -> dict[str, str]:
+def found_hotels(
+        values: dict[Any, Any], num_h: Optional[str] = None, distance: Optional[int] = None
+) -> dict[str, str]:
     """
     Функция для выборки из ответа от сервера названия отеля и его id.
-    Если в функцию передается переменная num_h, то функция переворачивает список отелей и создаёт
+    Если в функцию передаётся переменная num_h, то функция переворачивает список отелей и создаёт
     новый словарь с количеством элементов равным num_h.
+    Если в функцию передаётся переменная distance, то функция исключает из списка отели, которые находятся
+    на расстоянии от центра города больше значения данной переменой.
     :return dic[str, str] - возвращает словарь, где ключ - название отеля,
                             а значение ключа - его id значение
     """
@@ -61,14 +65,16 @@ def found_hotels(values: dict[Any, Any], num_h: Optional[str] = None) -> dict[st
             in list(reversed(result.items()))[:int(num_h)]
         }
 
-        return result
+    elif distance:
+        result = {val['name']: val['id'] for val in all_hotels
+                  if (val['destinationInfo']['distanceFromDestination']['value']
+                      and int(val['destinationInfo']['distanceFromDestination']['value']) <= distance / 1610)
+                  or not val['destinationInfo']['distanceFromDestination']['value']}
 
     return result
 
 
-def hotels_info(
-        values: dict[str, Any], c_in: datetime, c_out: datetime, distance: int = 0
-        ) -> dict[str, list[int]]:
+def hotels_info(values: dict[str, Any], c_in: datetime, c_out: datetime) -> dict[str, list[int, str]]:
     """
     Функция для фильтрации ответа сервера по определенный критериям отелей: стоимость за сутки,
     общая стоимость, расстояние от центра. Использует информацию об оплате из ответа от сервера,
@@ -79,18 +85,17 @@ def hotels_info(
                             отфильтрованные значения в виде списка.
     """
     all_hotels = values['data']['propertySearch']['properties']
+    print(all_hotels)
     all_hotels_info = dict()
     total_live = (c_out - c_in).days
     for val in all_hotels:
         name_hotel = val['name']
 
         if val['destinationInfo']['distanceFromDestination']['value']:
-            destination = int(val['destinationInfo']['distanceFromDestination']['value'] * 1000.61)
-            if destination > distance != 0:
-                continue
-
+            destination = str(int(val['destinationInfo']['distanceFromDestination']['value'] * 1610)) + ' м'
         else:
-            destination = 0
+            destination = 'Не указано'
+
         val = json.dumps(val)
         pattern_price = r'(?<=formattedDisplayPrice":."\D)\d+[.,]*\d+(?=")'
         pattern_total_price = r'(?<=value":."\D)\d+[.,]*\d+(?=\Dtotal)'

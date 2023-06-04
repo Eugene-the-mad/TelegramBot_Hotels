@@ -15,7 +15,7 @@ async def cmd_start(message: types.Message, state: FSMContext) -> None:
     Этот обработчик будет вызываться по команде /start.
     Проверяет на наличие нового пользователя, выводит окно приветствия для начала работы бота.
     """
-    user_name: Optional[tuple[str]] = check_name(message.from_user.id)
+    user_name: Optional[tuple[str]] = await check_name(message.from_user.id)
     if user_name:
         await message.answer(
             f'Привет, {user_name[0]}. Рад снова Вас видеть. Начнем работу.'

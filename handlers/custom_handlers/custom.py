@@ -143,7 +143,9 @@ async def check_info_search_custom(message: types.Message, state: FSMContext) ->
         await state.update_data(distance=int(message.text))
         await state.set_state(state=None)
         all_data = await state.get_data()
-        chosen_star = dict(sorted(all_data['star_hotel'].items(), key=lambda i: i[0])).values()
+        chosen_star = 'Не учитывать количество звезд отеля'
+        if all_data['star_hotel'] != 'not':
+            chosen_star = ', '.join(dict(sorted(all_data['star_hotel'].items(), key=lambda i: i[0])).values())
 
         await message.answer(
             'Отлично. Проверьте еще раз выбранные данные и нажмите кнопку <b>Продолжить</b>. '
@@ -157,7 +159,7 @@ async def check_info_search_custom(message: types.Message, state: FSMContext) ->
             f'Минимальная цена за номер: <b>{all_data["price_val"][0]} руб.</b>,\n'
             f'Максимальная цена за номер: <b>{all_data["price_val"][1]} руб.</b>,\n'
             f'Рейтинг отеля гостями: <b>{all_data["rate_guests"][1]}</b>.\n'
-            f'Количество звезд: <b>{", ".join(chosen_star)}</b>.\n'
+            f'Количество звезд: <b>{chosen_star}</b>.\n'
             f'Расстояние от отеля до центра города: <b>{all_data["distance"]} м</b>.\n'
             f'Загружать фото отелей: <b>{all_data["hot_photo"]}</b>.',
             reply_markup=next_canc(all_data['sort_price'] + 'search:')
@@ -224,9 +226,9 @@ async def hotels_find_custom(callback: types.CallbackQuery, state: FSMContext) -
         )
 
     else:
-        all_hotels_find: dict[str, str] = found_hotels(search_hotels, num_h=None)
+        all_hotels_find: dict[str, str] = found_hotels(search_hotels, num_h=None, distance=all_data['distance'])
         all_hotels_find_info: dict[str, list[int]] = hotels_info(
-            search_hotels, all_data['check_in'][0], all_data['check_out'][0], all_data['distance']
+            search_hotels, all_data['check_in'][0], all_data['check_out'][0]
         )
         await state.update_data(all_hotels=all_hotels_find)
         await state.update_data(all_hotels_info=all_hotels_find_info)
