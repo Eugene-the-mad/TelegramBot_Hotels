@@ -4,6 +4,11 @@ import locale
 import json
 import re
 
+from aiogram import types
+from aiogram.fsm.context import FSMContext
+
+from keyboards.reply import def_keyboard
+
 
 def found_cities(values: dict[str, Any]) -> dict[str, str]:
     """

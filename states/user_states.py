@@ -8,3 +8,4 @@ class UserState(StatesGroup):
     price_min = State()
     price_max = State()
     distance = State()
+    history_select = State()

@@ -12,6 +12,7 @@ from keyboards.reply import def_keyboard
 from aio_calendar import dialog_cal_callback, DialogCalendar
 import datetime
 from typing import Any
+from database import *
 
 router = Router()
 
@@ -23,7 +24,16 @@ async def send_low(message: types.Message, state: FSMContext) -> None:
     Этот обработчик будет вызываться при нажатии на кнопку
     Наименьшая стоимость либо по команде /low
     """
+    # запись в историю просмотренные отели, если был совершен некорректный выход из просмотра списка отелей путем
+    # вызова другой команды
+    all_data = await state.get_data()
+    if 'hotels_review' in all_data.keys():
+        hotels_names = 'Просмотренные отели: ' + ', '.join(all_data['hotels_review'])
+        await insert_user_action((message.from_user.id, datetime.datetime.now(), hotels_names))
+
+    await state.clear()
     now_rate: int = current_rate_USD()
+    await insert_user_action((message.from_user.id, datetime.datetime.now(), 'Поиск по наименьшей стоимости:'))
     await state.update_data(sort_price='low', now_rate=now_rate)
     await message.answer('В каком городе будем искать отели? Напишите название города:')
     await state.set_state(UserState.cities)
@@ -194,6 +204,8 @@ async def return_to_middle(callback: types.CallbackQuery, state: FSMContext) -> 
 
 @router.callback_query(Text(startswith='lowsearch:Продолжить'))
 async def hotels_find_low(callback: types.CallbackQuery, state: FSMContext) -> None:
+    detail_info = 'Параметры поиска:\n' + callback.message.text.split('\n\n')[1]
+    await insert_user_action((callback.from_user.id, datetime.datetime.now(), detail_info))
     await callback.message.delete_reply_markup()
     all_data = await state.get_data()
 
@@ -237,6 +249,7 @@ async def hotels_find_low(callback: types.CallbackQuery, state: FSMContext) -> N
     await callback.message.chat.delete_message(message_id=waiting.message_id)
 
     if 'errors' in search_hotels.keys():
+        await insert_user_action((callback.from_user.id, datetime.datetime.now(), 'По Вашему запросу отели не найдены'))
         await callback.message.answer(
             '<b>По Вашему запросу отели не найдены.</b>\n'
             'Повторить поиск, указав новые значения - нажмите <b>Продолжить</b>.\n'
@@ -310,6 +323,15 @@ async def check_search_info(callback: types.CallbackQuery, state: FSMContext) ->
 
     await callback.message.chat.delete_message(message_id=waiting.message_id)
     name_hotel = detail_hotel["data"]["propertyInfo"]["summary"]["name"]
+    # добавление названий отелей в общий список, для дальнейшего занесения в историю
+    if 'hotels_review' not in all_data.keys():
+        hotels_review_ = [name_hotel]
+        await state.update_data(hotels_review=hotels_review_)
+    else:
+        new_list = all_data['hotels_review']
+        new_list.append(name_hotel)
+        await state.update_data(hotels_review=new_list)
+
     now_rate = all_data['now_rate']
 
     await callback.message.answer(
@@ -348,8 +370,12 @@ async def continue_show(callback: types.CallbackQuery, state: FSMContext) -> Non
     )
 
 
-@router.callback_query(Text(startswith=['list_hotels:Отмена', 'not_result:Отмена']))
+@router.callback_query(Text(startswith=['list_hotels:Отмена', 'not_result:Отмена', 'history:Отмена']))
 async def return_start(callback: types.CallbackQuery, state: FSMContext) -> None:
+    all_data = await state.get_data()
+    if 'hotels_review' in all_data.keys():
+        hotels_names = 'Просмотренные отели: ' + ', '.join(all_data['hotels_review'])
+        await insert_user_action((callback.from_user.id, datetime.datetime.now(), hotels_names))
     await state.clear()
     await callback.message.edit_reply_markup()
     await callback.message.answer(

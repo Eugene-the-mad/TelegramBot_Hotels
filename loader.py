@@ -9,15 +9,17 @@ from database import create_table
 
 async def main() -> None:
     bot = Bot(token=config.bot_token.get_secret_value(), parse_mode='HTML')
-    logging.basicConfig(level=logging.INFO)
     dp = Dispatcher(storage=MemoryStorage())
+    logging.basicConfig(level=logging.DEBUG)
     dp.include_routers(
         help.router,
         start.router,
         user_name.router,
+        history.router,
         low.router,
         high.router,
         custom.router,
+
         echo.router
     )
     await create_table()

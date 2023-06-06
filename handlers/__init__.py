@@ -8,5 +8,6 @@ __all__ = [
     'low',
     'high',
     'custom',
+    'history',
     'echo'
 ]
