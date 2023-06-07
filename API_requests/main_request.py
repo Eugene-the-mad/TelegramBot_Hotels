@@ -16,7 +16,8 @@ def api_requests(method_endswith: str, method: str, params: dict[Any, Any]):
         return post_request(url, params, headers)
 
 
-def get_request(url, params, headers) -> dict[Any, Any]:
+def get_request(url: str, params: dict[Any, Any], headers: dict[str, str]) -> dict[Any, Any]:
+    """ Функция выполнения get API запросов """
     req = requests.get(
         url=url,
         headers=headers,
@@ -27,7 +28,8 @@ def get_request(url, params, headers) -> dict[Any, Any]:
         return req.json()
 
 
-def post_request(url, params, headers) -> dict[Any, Any]:
+def post_request(url: str, params: dict[Any, Any], headers: dict[str, str]) -> dict[Any, Any]:
+    """ Функция выполнения post API запросов """
     req = requests.post(
         url=url,
         json=params,

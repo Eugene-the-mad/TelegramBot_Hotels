@@ -36,6 +36,10 @@ async def send_high(message: types.Message, state: FSMContext) -> None:
 
 @router.callback_query(Text(startswith='highsearch:Продолжить'))
 async def hotels_find_high(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться при нажатии инлайн-кнопки Продолжить для подтверждения
+    параметров запроса на поиск отелей по наибольшей цене
+    """
     detail_info = 'Параметры поиска:\n' + callback.message.text.split('\n\n')[1]
     await insert_user_action((callback.from_user.id, datetime.datetime.now(), detail_info))
     await callback.message.delete_reply_markup()

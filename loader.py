@@ -19,7 +19,6 @@ async def main() -> None:
         low.router,
         high.router,
         custom.router,
-
         echo.router
     )
     await create_table()

@@ -35,6 +35,10 @@ async def send_custom(message: types.Message, state: FSMContext) -> None:
 
 @router.callback_query(Text(startswith='customphotoLoad_'))
 async def check_photo_custom(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться при нажатии инлайн-кнопки Да при выборе показа фотографий отеля
+    по параметрам.
+    """
     photo_load = callback.data.split('_')[1]
     await state.update_data(hot_photo=photo_load)
     await callback.message.edit_reply_markup()
@@ -45,6 +49,9 @@ async def check_photo_custom(callback: types.CallbackQuery, state: FSMContext) -
 
 @router.message(UserState.price_min)
 async def check_price_min(message: types.Message, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться только при вводе минимальной цены за номер при поиске по параметрам
+    """
     min_price = message.text
 
     if not min_price.isdigit():
@@ -62,6 +69,9 @@ async def check_price_min(message: types.Message, state: FSMContext) -> None:
 
 @router.message(UserState.price_max)
 async def check_price_max(message: types.Message, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться только при вводе максимальной цены за номер при поиске по параметрам
+    """
     max_price = message.text
     all_data = await state.get_data()
 
@@ -91,6 +101,9 @@ async def check_price_max(message: types.Message, state: FSMContext) -> None:
 
 @router.callback_query(Text(startswith='rate_guests:'))
 async def check_rate_guest(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться при нажатии одной из инлайн-кнопок, указывающих рейтинг отеля гостями
+    """
     r_guests = callback.data.split(':')
     await state.update_data(rate_guests=[r_guests[2], r_guests[1]], star_hotel={})
     await callback.message.delete()
@@ -104,6 +117,10 @@ async def check_rate_guest(callback: types.CallbackQuery, state: FSMContext) -> 
 
 @router.callback_query(Text(startswith='star_hotel:'))
 async def check_hotel_star(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться при нажатии инлайн-кнопок, указывающих на количество
+    звезд отеля
+    """
     stars = callback.data.split(':')
     all_data = await state.get_data()
     if stars[2] == 'not':
@@ -143,6 +160,9 @@ async def check_hotel_star(callback: types.CallbackQuery, state: FSMContext) -> 
 
 @router.message(UserState.distance)
 async def check_info_search_custom(message: types.Message, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться только после ввода расстояния от отеля до центра после выбора звезд отеля
+    """
     if not message.text.isdigit() or message.text == '0':
         await message.answer(
             'Видимо опечатка. Расстояние должно быть только арабскими цифрами, целым числом и не'
@@ -178,6 +198,10 @@ async def check_info_search_custom(message: types.Message, state: FSMContext) ->
 
 @router.callback_query(Text(startswith='customsearch:Продолжить'))
 async def hotels_find_custom(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться при нажатии инлайн-кнопки Продолжить после вывода обобщенной
+    информации для поиска по параметрам пользователя
+    """
     detail_info = 'Параметры поиска:\n' + callback.message.text.split('\n\n')[1]
     await insert_user_action((callback.from_user.id, datetime.datetime.now(), detail_info))
     await callback.message.delete_reply_markup()

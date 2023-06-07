@@ -72,7 +72,7 @@ async def history_custom(callback: CallbackQuery, state: FSMContext) -> None:
 @router.callback_query(UserState.history_select, dialog_cal_callback.filter())
 async def check_in_date(callback_query: CallbackQuery, callback_data: dict, state: FSMContext) -> None:
     """
-       Этот обработчик будет вызываться после выбора даты
+    Этот обработчик будет вызываться после выбора даты
     """
     selected, date = await DialogCalendar().process_selection(callback_query, callback_data)
     if selected:

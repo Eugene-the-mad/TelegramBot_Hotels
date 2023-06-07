@@ -83,6 +83,9 @@ async def send_city(message: types.Message, state: FSMContext) -> None:
 
 @router.callback_query(Text(startswith='gaiaID'))
 async def check_city(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться при нажатии на выбранную локацию из списка инлайн-кнопок
+    """
     all_cities = await state.get_data()
     await state.set_state(state=None)
     id_city = callback.data.split(':')[1]
@@ -101,6 +104,9 @@ async def check_city(callback: types.CallbackQuery, state: FSMContext) -> None:
 
 @router.callback_query(dialog_cal_callback.filter())
 async def check_in_date(callback_query: CallbackQuery, callback_data: dict, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться при выборе даты по календарю из инлайн-кнопок
+    """
     selected, date = await DialogCalendar().process_selection(callback_query, callback_data)
     if selected:
         data_mem = await state.get_data()
@@ -142,6 +148,9 @@ async def check_in_date(callback_query: CallbackQuery, callback_data: dict, stat
 
 @router.callback_query(Text(startswith='person'))
 async def check_person(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться после нажатия на инлайн-кнопку количества персон для заселения
+    """
     num_pers = callback.data.split('_')[1]
     await state.update_data(num_pers=num_pers)
     await callback.message.edit_reply_markup()
@@ -154,6 +163,9 @@ async def check_person(callback: types.CallbackQuery, state: FSMContext) -> None
 
 @router.message(UserState.hotels)
 async def select_photo(message: types.Message, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться только после ввода количества отелей для отображения
+    """
     if not message.text.isdigit() or message.text == '0':
         await message.answer('Количество отелей должно быть только арабской цифрой и больше нуля! Повторите ввод.')
         await state.set_state(UserState.hotels)
@@ -173,6 +185,9 @@ async def select_photo(message: types.Message, state: FSMContext) -> None:
 
 @router.callback_query(Text(startswith='photoLoad_'))
 async def check_info_search(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться при нажатии инлайн-кнопки Да для показа фотографий отеля
+    """
     photo_load = callback.data.split('_')[1]
     await state.update_data(hot_photo=photo_load)
     all_data = await state.get_data()
@@ -194,6 +209,9 @@ async def check_info_search(callback: types.CallbackQuery, state: FSMContext) ->
 
 @router.callback_query(Text(endswith='search:Отмена'))
 async def return_to_middle(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться при нажатии инлайн-кнопки Отмена после вывода общих данных для поиска
+    """
     await state.update_data(check_in=None, check_out=None)
     await callback.message.edit_reply_markup()
     await callback.message.answer(
@@ -204,6 +222,9 @@ async def return_to_middle(callback: types.CallbackQuery, state: FSMContext) -> 
 
 @router.callback_query(Text(startswith='lowsearch:Продолжить'))
 async def hotels_find_low(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться при нажатии инлайн-кнопки Продолжить после вывода общих данных для поиска
+    """
     detail_info = 'Параметры поиска:\n' + callback.message.text.split('\n\n')[1]
     await insert_user_action((callback.from_user.id, datetime.datetime.now(), detail_info))
     await callback.message.delete_reply_markup()
@@ -272,6 +293,9 @@ async def hotels_find_low(callback: types.CallbackQuery, state: FSMContext) -> N
 
 @router.callback_query(Text(startswith='not_result:Продолжить'))
 async def return_to_begin(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться при нажатии инлайн-кнопки Продолжить, если поиск не дал результатов
+    """
     all_data = await state.get_data()
     now_rate = all_data['now_rate']
     sort_price = all_data['sort_price']
@@ -284,6 +308,10 @@ async def return_to_begin(callback: types.CallbackQuery, state: FSMContext) -> N
 
 @router.callback_query(Text(startswith='hotels:'))
 async def check_search_info(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться при нажатии на инлайн-кнопку названия отеля из списка для запроса
+    информации об отеле и её отображении пользователю
+    """
     id_hotel: str = callback.data.split(':')[1]
     all_data = await state.get_data()
     await callback.message.delete()
@@ -361,6 +389,10 @@ async def check_search_info(callback: types.CallbackQuery, state: FSMContext) ->
 
 @router.callback_query(Text(startswith='list_hotels:Продолжить'))
 async def continue_show(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться при нажатии инлайн-кнопки Продолжить после вывода
+    информации об отеле. Выводит повторно список найденных отелей в виде инлайн-кнопок
+    """
     await callback.message.delete()
     all_data = await state.get_data()
     all_hotels_find = all_data['all_hotels']
@@ -372,6 +404,11 @@ async def continue_show(callback: types.CallbackQuery, state: FSMContext) -> Non
 
 @router.callback_query(Text(startswith=['list_hotels:Отмена', 'not_result:Отмена', 'history:Отмена']))
 async def return_start(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться при нажатии инлайн-кнопки Отмена в случаях:
+    после вывода информации об отеле, при отсутствии результата поиска отелей по параметрам,
+    при отмене выбора показа запросов пользователя
+    """
     all_data = await state.get_data()
     if 'hotels_review' in all_data.keys():
         hotels_names = 'Просмотренные отели: ' + ', '.join(all_data['hotels_review'])
