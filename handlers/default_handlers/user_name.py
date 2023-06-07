@@ -9,6 +9,11 @@ router = Router()
 
 @router.message(UserState.name)
 async def get_username(message: types.Message, state: FSMContext) -> None:
+    """
+    Хендлер, срабатывающий при вводе имени пользователя. Проверяет ввод на корректность (
+    в имени должны быть только буквы), заносит имя в БД. Переводит пользователя к началу
+    работы Бота.
+    """
     if message.text.isalpha():
         await state.update_data(username=message.text)
         data = await state.get_data()

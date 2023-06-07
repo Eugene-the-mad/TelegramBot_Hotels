@@ -3,6 +3,7 @@ from aiogram.filters.command import Command
 from aiogram.filters import Text
 from aiogram.fsm.context import FSMContext
 from API_requests import api_requests, current_rate_USD
+from handlers.custom_handlers.low import err_end
 from states import UserState
 from utils import found_hotels, hotels_info
 from keyboards.inline import *
@@ -30,7 +31,9 @@ async def send_high(message: types.Message, state: FSMContext) -> None:
     now_rate: int = current_rate_USD()
     await insert_user_action((message.from_user.id, datetime.datetime.now(), 'Поиск по наибольшей стоимости:'))
     await state.update_data(sort_price='high', now_rate=now_rate)
-    await message.answer("В каком городе будем искать отели? Напишите название города:")
+    await message.answer(
+        'В каком городе будем искать отели <b>(города РФ временно не доступны)</b>? Напишите название города:'
+    )
     await state.set_state(UserState.cities)
 
 
@@ -38,7 +41,9 @@ async def send_high(message: types.Message, state: FSMContext) -> None:
 async def hotels_find_high(callback: types.CallbackQuery, state: FSMContext) -> None:
     """
     Этот обработчик будет вызываться при нажатии инлайн-кнопки Продолжить для подтверждения
-    параметров запроса на поиск отелей по наибольшей цене
+    параметров запроса на поиск отелей по наибольшей цене.
+    Производит запрос к api сервера меняя порог минимальной величины стоимости отелей до тех пор,
+    пока не будет в ответе не более 200 отелей для дальнейшей их сортировки по убыванию цены.
     """
     detail_info = 'Параметры поиска:\n' + callback.message.text.split('\n\n')[1]
     await insert_user_action((callback.from_user.id, datetime.datetime.now(), detail_info))
@@ -46,7 +51,8 @@ async def hotels_find_high(callback: types.CallbackQuery, state: FSMContext) -> 
     all_data = await state.get_data()
     all_hotels_find = dict()
 
-    waiting = await callback.message.answer('\U000023F3')
+    hourglass_emoji = '\U000023F3'
+    waiting = await callback.message.answer(hourglass_emoji)
     min_num = 50
     while True:
         search_hotels = api_requests(
@@ -86,6 +92,10 @@ async def hotels_find_high(callback: types.CallbackQuery, state: FSMContext) -> 
             }
         )
 
+        if not search_hotels:
+            await err_end(callback.message, state)
+            break
+
         if 'errors' in search_hotels.keys():
             break
         elif len(search_hotels['data']['propertySearch']['properties']) == 200:
@@ -98,7 +108,9 @@ async def hotels_find_high(callback: types.CallbackQuery, state: FSMContext) -> 
     await callback.message.chat.delete_message(message_id=waiting.message_id)
 
     if not all_hotels_find:
-        await insert_user_action((callback.from_user.id, datetime.datetime.now(), 'По Вашему запросу отели не найдены'))
+        await insert_user_action(
+            (callback.from_user.id, datetime.datetime.now(), 'По Вашему запросу отели не найдены')
+        )
         await callback.message.answer(
             '<b>По Вашему запросу отели не найдены.</b>\n'
             'Повторить поиск по новым параметрам - нажмите <b>Продолжить</b>, '

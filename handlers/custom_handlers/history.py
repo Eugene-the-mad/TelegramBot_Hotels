@@ -15,17 +15,17 @@ router = Router()
 @router.message(Text('История запросов'))
 async def send_history(message: types.Message) -> None:
     """
-    Этот обработчик будет вызываться при нажатии на кнопку
-    История запросов либо по команде /history
+    Этот обработчик будет вызываться при нажатии на кнопку История запросов либо по команде /history.
+    Выводит инлайн-клавиатуру для выбора критериев истории запросов.
     """
-
     await message.answer('Выберите период отображения Ваших запросов:', reply_markup=history_selection())
 
 
 @router.callback_query(Text(startswith='history:today'))
 async def history_today(callback: CallbackQuery) -> None:
     """
-    Этот обработчик будет вызываться при нажатии на инлайн-кнопку Сегодня
+    Этот обработчик будет вызываться при нажатии на инлайн-кнопку Сегодня.
+    Выводит историю запросов пользователя за текущий день.
     """
     param = callback.data.split(':')[1]
     history_log = await search_user_action(user_id=callback.from_user.id, param=param)
@@ -42,7 +42,8 @@ async def history_today(callback: CallbackQuery) -> None:
 @router.callback_query(Text(startswith='history:yesterday'))
 async def history_yesterday(callback: CallbackQuery) -> None:
     """
-    Этот обработчик будет вызываться при нажатии на инлайн-кнопку Вчера
+    Этот обработчик будет вызываться при нажатии на инлайн-кнопку Вчера.
+    Выводит историю запросов пользователя за вчерашний день.
     """
     param = callback.data.split(':')[1]
     history_log = await search_user_action(user_id=callback.from_user.id, param=param)
@@ -59,7 +60,8 @@ async def history_yesterday(callback: CallbackQuery) -> None:
 @router.callback_query(Text(startswith='history:custom'))
 async def history_custom(callback: CallbackQuery, state: FSMContext) -> None:
     """
-    Этот обработчик будет вызываться при нажатии на инлайн-кнопку Указать дату
+    Этот обработчик будет вызываться при нажатии на инлайн-кнопку Указать дату.
+    Переводит пользователя к выбору даты запросов через инлайн-календарь.
     """
     await callback.message.delete()
     await callback.message.answer(
@@ -72,7 +74,8 @@ async def history_custom(callback: CallbackQuery, state: FSMContext) -> None:
 @router.callback_query(UserState.history_select, dialog_cal_callback.filter())
 async def check_in_date(callback_query: CallbackQuery, callback_data: dict, state: FSMContext) -> None:
     """
-    Этот обработчик будет вызываться после выбора даты
+    Этот обработчик будет вызываться после выбора даты пользователем в инлайн-календаре.
+    Выводит запросы пользователя за указанную дату.
     """
     selected, date = await DialogCalendar().process_selection(callback_query, callback_data)
     if selected:
@@ -89,7 +92,8 @@ async def check_in_date(callback_query: CallbackQuery, callback_data: dict, stat
 @router.callback_query(Text(startswith='history:all'))
 async def history_custom(callback: types.CallbackQuery) -> None:
     """
-    Этот обработчик будет вызываться при нажатии на инлайн-кнопку За всё время
+    Этот обработчик будет вызываться при нажатии на инлайн-кнопку За всё время.
+    Выводит пользователю всю историю его запросов, сортирую по датам.
     """
     param = callback.data.split(':')[1]
     history_log = await search_user_action(user_id=callback.from_user.id, param=param)
@@ -106,13 +110,17 @@ async def history_custom(callback: types.CallbackQuery) -> None:
 @router.callback_query(Text(startswith='history:Продолжить'))
 async def history_start(callback: types.CallbackQuery) -> None:
     """
-    Этот обработчик будет вызываться при нажатии на инлайн-кнопку Продолжить
+    Этот обработчик будет вызываться при нажатии на инлайн-кнопку Продолжить.
+    Возвращает пользователя к выбору критериев вывода запросов.
     """
     await callback.message.delete()
     await send_history(callback.message)
 
 
-async def history_end(message: types.Message):
+async def history_end(message: types.Message) -> None:
+    """
+    Функция, при обращении к которой, выводит инлайн-клавиатуру с дальнейшими действиями
+    """
     await message.answer('Что делаем дальше?\n'
                          '<b>Продолжить</b> - указать другие условия истории запросов,\n'
                          '<b>Отмена</b> - вернуться в главное меня Бота',

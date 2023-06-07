@@ -3,6 +3,7 @@ from aiogram.filters.command import Command
 from aiogram.filters import Text
 from aiogram.fsm.context import FSMContext
 from API_requests import api_requests, current_rate_USD
+from handlers.custom_handlers.low import err_end
 from states import UserState
 from utils import found_hotels, hotels_info
 from keyboards.inline import *
@@ -25,11 +26,14 @@ async def send_custom(message: types.Message, state: FSMContext) -> None:
     if 'hotels_review' in all_data.keys():
         hotels_names = 'Просмотренные отели: ' + ', '.join(all_data['hotels_review'])
         await insert_user_action((message.from_user.id, datetime.datetime.now(), hotels_names))
+
     await state.clear()
     await insert_user_action((message.from_user.id, datetime.datetime.now(), 'Поиск по параметрам пользователя:'))
     now_rate: int = current_rate_USD()
     await state.update_data(sort_price='custom', now_rate=now_rate)
-    await message.answer('В каком городе будем искать отели? Напишите название города:')
+    await message.answer(
+        'В каком городе будем искать отели <b>(города РФ временно не доступны)</b>? Напишите название города:'
+    )
     await state.set_state(UserState.cities)
 
 
@@ -38,6 +42,7 @@ async def check_photo_custom(callback: types.CallbackQuery, state: FSMContext) -
     """
     Этот обработчик будет вызываться при нажатии инлайн-кнопки Да при выборе показа фотографий отеля
     по параметрам.
+    Переводит пользователя к указанию минимальной цены номеров отелей.
     """
     photo_load = callback.data.split('_')[1]
     await state.update_data(hot_photo=photo_load)
@@ -50,7 +55,8 @@ async def check_photo_custom(callback: types.CallbackQuery, state: FSMContext) -
 @router.message(UserState.price_min)
 async def check_price_min(message: types.Message, state: FSMContext) -> None:
     """
-    Этот обработчик будет вызываться только при вводе минимальной цены за номер при поиске по параметрам
+    Этот обработчик будет вызываться только при вводе минимальной цены за номер при поиске по параметрам.
+    Переводит пользователя к указанию максимальной цены за номер.
     """
     min_price = message.text
 
@@ -70,7 +76,8 @@ async def check_price_min(message: types.Message, state: FSMContext) -> None:
 @router.message(UserState.price_max)
 async def check_price_max(message: types.Message, state: FSMContext) -> None:
     """
-    Этот обработчик будет вызываться только при вводе максимальной цены за номер при поиске по параметрам
+    Этот обработчик будет вызываться только при вводе максимальной цены за номер при поиске по параметрам.
+    Переводит пользователя к выбору рейтинга отелей при помощи инлайн-клавиатуры.
     """
     max_price = message.text
     all_data = await state.get_data()
@@ -102,7 +109,8 @@ async def check_price_max(message: types.Message, state: FSMContext) -> None:
 @router.callback_query(Text(startswith='rate_guests:'))
 async def check_rate_guest(callback: types.CallbackQuery, state: FSMContext) -> None:
     """
-    Этот обработчик будет вызываться при нажатии одной из инлайн-кнопок, указывающих рейтинг отеля гостями
+    Этот обработчик будет вызываться при нажатии одной из инлайн-кнопок, указывающих рейтинг отеля гостями.
+    Переводит пользователя к выбору звёзд отеля при помощи инлайн-клавиатуры.
     """
     r_guests = callback.data.split(':')
     await state.update_data(rate_guests=[r_guests[2], r_guests[1]], star_hotel={})
@@ -119,7 +127,8 @@ async def check_rate_guest(callback: types.CallbackQuery, state: FSMContext) -> 
 async def check_hotel_star(callback: types.CallbackQuery, state: FSMContext) -> None:
     """
     Этот обработчик будет вызываться при нажатии инлайн-кнопок, указывающих на количество
-    звезд отеля
+    звезд отеля. По окончанию ввода переводит пользователя к указанию максимального расстояния
+    отеля до центра города.
     """
     stars = callback.data.split(':')
     all_data = await state.get_data()
@@ -161,7 +170,9 @@ async def check_hotel_star(callback: types.CallbackQuery, state: FSMContext) -> 
 @router.message(UserState.distance)
 async def check_info_search_custom(message: types.Message, state: FSMContext) -> None:
     """
-    Этот обработчик будет вызываться только после ввода расстояния от отеля до центра после выбора звезд отеля
+    Этот обработчик будет вызываться только после ввода расстояния от отеля до центра города.
+    Выводит в чат обобщенную информацию выбранных параметров для поиска. Выводит инлайн-
+    клавиатуру для выбора дальнейших действий.
     """
     if not message.text.isdigit() or message.text == '0':
         await message.answer(
@@ -200,7 +211,8 @@ async def check_info_search_custom(message: types.Message, state: FSMContext) ->
 async def hotels_find_custom(callback: types.CallbackQuery, state: FSMContext) -> None:
     """
     Этот обработчик будет вызываться при нажатии инлайн-кнопки Продолжить после вывода обобщенной
-    информации для поиска по параметрам пользователя
+    информации для поиска по параметрам пользователя. Производит post запрос к api сервера, из полученного
+    ответа выводит списком инлайн-кнопок названия найденных отелей.
     """
     detail_info = 'Параметры поиска:\n' + callback.message.text.split('\n\n')[1]
     await insert_user_action((callback.from_user.id, datetime.datetime.now(), detail_info))
@@ -208,7 +220,8 @@ async def hotels_find_custom(callback: types.CallbackQuery, state: FSMContext) -
     all_data = await state.get_data()
     now_rate = all_data['now_rate']
 
-    waiting = await callback.message.answer('\U000023F3')
+    hourglass_emoji = '\U000023F3'
+    waiting = await callback.message.answer(hourglass_emoji)
     params = {
         "currency": "USD",
         "eapid": 1,
@@ -253,23 +266,33 @@ async def hotels_find_custom(callback: types.CallbackQuery, state: FSMContext) -
     )
     await callback.message.chat.delete_message(message_id=waiting.message_id)
 
-    if 'errors' in search_hotels.keys():
-        await insert_user_action((callback.from_user.id, datetime.datetime.now(), 'По Вашему запросу отели не найдены'))
-        await callback.message.answer(
-            '<b>По Вашему запросу отели не найдены.</b>\n'
-            'Повторить поиск по новым параметрам - нажмите <b>Продолжить</b>, '
-            'или чтобы вернуться в главное меню бота нажмите <b>Отмена</b>.',
-            reply_markup=next_canc(elem='not_result:')
-        )
+    if not search_hotels:
+        await err_end(callback.message, state)
 
     else:
-        all_hotels_find: dict[str, str] = found_hotels(search_hotels, num_h=None, distance=all_data['distance'])
-        all_hotels_find_info: dict[str, list[int]] = hotels_info(
-            search_hotels, all_data['check_in'][0], all_data['check_out'][0]
-        )
-        await state.update_data(all_hotels=all_hotels_find)
-        await state.update_data(all_hotels_info=all_hotels_find_info)
-        await callback.message.answer(
-            "Выберите отель из списка:",
-            reply_markup=select_kb(all_hotels_find, val='hotels:'),
-        )
+        all_hotels_find = dict()
+
+        if 'errors' not in search_hotels.keys():
+            all_hotels_find: dict[str, str] = found_hotels(search_hotels, num_h=None, distance=all_data['distance'])
+
+        if all_hotels_find:
+            all_hotels_find_info: dict[str, list[int]] = hotels_info(
+                search_hotels, all_data['check_in'][0], all_data['check_out'][0]
+            )
+            await state.update_data(all_hotels=all_hotels_find)
+            await state.update_data(all_hotels_info=all_hotels_find_info)
+            await callback.message.answer(
+                "Выберите отель из списка:",
+                reply_markup=select_kb(all_hotels_find, val='hotels:'),
+            )
+
+        else:
+            await insert_user_action(
+                (callback.from_user.id, datetime.datetime.now(), 'По Вашему запросу отели не найдены.')
+            )
+            await callback.message.answer(
+                '<b>По Вашему запросу отели не найдены.</b>\n'
+                'Повторить поиск по новым параметрам - нажмите <b>Продолжить</b>, '
+                'или чтобы вернуться в главное меню бота нажмите <b>Отмена</b>.',
+                reply_markup=next_canc(elem='not_result:')
+            )
