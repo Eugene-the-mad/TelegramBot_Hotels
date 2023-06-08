@@ -77,6 +77,7 @@ async def hotels_find_high(callback: types.CallbackQuery, state: FSMContext) -> 
                 "rooms": [
                     {
                         "adults": int(all_data["num_pers"]),
+                        "children": []
                     }
                 ],
                 "resultsStartingIndex": 0,

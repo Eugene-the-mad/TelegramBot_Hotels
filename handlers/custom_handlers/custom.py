@@ -5,10 +5,11 @@ from aiogram.fsm.context import FSMContext
 from API_requests import api_requests, current_rate_USD
 from handlers.custom_handlers.low import err_end
 from states import UserState
-from utils import found_hotels, hotels_info
+from utils import found_hotels, hotels_info, output_children
 from keyboards.inline import *
 from database import *
 import datetime
+from math import ceil
 
 router = Router()
 
@@ -35,6 +36,92 @@ async def send_custom(message: types.Message, state: FSMContext) -> None:
         'В каком городе будем искать отели <b>(города РФ временно не доступны)</b>? Напишите название города:'
     )
     await state.set_state(UserState.cities)
+
+
+#
+@router.callback_query(UserState.children, Text(startswith='person'))
+async def check_person(callback: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться после нажатия на инлайн-кнопку количества персон для заселения
+    только при поиске отелей по параметрам.
+    Запрашивает у пользователя ввести количество детей.
+    """
+    num_pers = callback.data.split('_')[1]
+    await state.update_data(num_pers=num_pers)
+    await callback.message.edit_reply_markup()
+    await callback.message.edit_text(f'Количество персон: <b>{num_pers}</b>.')
+    await callback.message.answer(
+        'Детей с собой возьмём? Укажите количество (0 - без детей): '
+    )
+    await state.set_state(UserState.children)
+
+
+@router.message(UserState.children)
+async def select_photo(message: types.Message, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться только после ввода количества детей для заселения.
+    Выводит запрос на загрузку фотографий отелей через инлайн-клавиатуру
+    """
+    if not message.text.isdigit():
+        await message.answer('Количество детей должно быть только арабской цифрой и целым числом! Повторите ввод.')
+        await state.set_state(UserState.children)
+
+    else:
+        if message.text == '0':
+            await state.update_data(num_childs=int(message.text))
+            await message.answer('Количество детей: <b>без детей</b>.')
+            await message.answer(
+                'Какое максимальное количество отелей показать? Введите количество:'
+            )
+            await state.set_state(UserState.hotels)
+
+        else:
+            await state.update_data(num_childs=int(message.text), age_child_num=1)
+            await message.answer(f'Введите возраст 1-го ребёнка:')
+            await state.set_state(UserState.children_age)
+
+
+@router.message(UserState.children_age)
+async def child_age(message: types.Message, state: FSMContext) -> None:
+    """
+    Этот обработчик будет вызываться только после ввода возраста ребёнка до тех пор, пока не будет указан
+    возраст всех детей. Заносит в память возраст детей.
+    Запрашивает у пользователя указать количество отелей для показа.
+    """
+    if not message.text.isdigit() or int(message.text) == 0 or int(message.text) > 17:
+        await message.answer(
+            'Возраст ребёнка указывать только целым числом в диапазоне от 1 до 17 лет '
+            '(если ребёнку нет еще года, укажите возраст равный 1)! Повторите ввод.')
+        await state.set_state(UserState.children_age)
+
+    else:
+        all_data = await state.get_data()
+        age_child_num = all_data.get('age_child_num')
+        if age_child_num == 1:
+            age_children = {1: int(message.text)}
+            await state.update_data(age_children=age_children)
+        else:
+            age_children = all_data['age_children']
+            age_children[age_child_num] = int(message.text)
+            await state.update_data(
+                age_child_num=age_child_num,
+                age_children=age_children
+            )
+
+        if age_child_num < all_data['num_childs']:
+            age_child_num += 1
+            await state.update_data(
+                age_child_num=age_child_num
+            )
+            await message.answer(f'Введите возраст {age_child_num}-го ребёнка:')
+            await state.set_state(UserState.children_age)
+
+        else:
+            all_data = await state.get_data()
+            children_age_list = output_children(all_data)
+            await message.answer(f'Выбранное количество детей: <b>{children_age_list}</b>.')
+            await message.answer('Какое максимальное количество отелей показать? Введите количество:')
+            await state.set_state(UserState.hotels)
 
 
 @router.callback_query(Text(startswith='customphotoLoad_'))
@@ -187,7 +274,7 @@ async def check_info_search_custom(message: types.Message, state: FSMContext) ->
         chosen_star = 'Не учитывать количество звезд отеля'
         if all_data['star_hotel'] != 'not':
             chosen_star = ', '.join(dict(sorted(all_data['star_hotel'].items(), key=lambda i: i[0])).values())
-
+        age_children = output_children(all_data)
         await message.answer(
             'Отлично. Проверьте еще раз выбранные данные и нажмите кнопку <b>Продолжить</b>. '
             'Если хотите изменить данные - нажмите кнопку '
@@ -196,6 +283,7 @@ async def check_info_search_custom(message: types.Message, state: FSMContext) ->
             f'Дата заезда: <b>{all_data["check_in"][1]}</b>,\n'
             f'Дата выселения: <b>{all_data["check_out"][1]}</b>,\n'
             f'Количество персон: <b>{all_data["num_pers"]}</b>,\n'
+            f'Количество детей: <b>{age_children}</b>.\n'
             f'Максимально количество отелей: <b>{all_data["num_hotels"]}</b>,\n'
             f'Минимальная цена за номер: <b>{all_data["price_val"][0]} руб.</b>,\n'
             f'Максимальная цена за номер: <b>{all_data["price_val"][1]} руб.</b>,\n'
@@ -241,6 +329,7 @@ async def hotels_find_custom(callback: types.CallbackQuery, state: FSMContext) -
         "rooms": [
             {
                 "adults": int(all_data["num_pers"]),
+                "children": []
             }
         ],
         "resultsStartingIndex": 0,
@@ -249,7 +338,7 @@ async def hotels_find_custom(callback: types.CallbackQuery, state: FSMContext) -
         "filters": {
             "price": {
                 "max": int(int(all_data["price_val"][1]) / now_rate),
-                "min": int(int(all_data["price_val"][0]) / now_rate)
+                "min": ceil(int(all_data["price_val"][0]) / now_rate)
             },
             "availableFilter": "SHOW_AVAILABLE_ONLY"
         }
@@ -258,6 +347,9 @@ async def hotels_find_custom(callback: types.CallbackQuery, state: FSMContext) -
         params["filters"]["star"] = [i for i in all_data['star_hotel'].keys()]
     if all_data['rate_guests'] != 'not':
         params["filters"]["guestRating"] = all_data['rate_guests'][0]
+    if all_data['num_childs'] != 0:
+        for _, age in all_data['age_children'].items():
+            params["rooms"][0]["children"].append({"age": age})
 
     search_hotels = api_requests(
         method_endswith='properties/v2/list',

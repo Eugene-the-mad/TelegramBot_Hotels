@@ -32,7 +32,8 @@ async def history_today(callback: CallbackQuery) -> None:
     await callback.message.delete()
 
     if history_log:
-        await callback.message.answer(history_log)
+        for x in range(0, len(history_log), 4096):
+            await callback.message.answer(f'{history_log[x:x + 4096]}')
     else:
         await callback.message.answer('Сегодня Вы не делали запросы.')
 
@@ -50,7 +51,8 @@ async def history_yesterday(callback: CallbackQuery) -> None:
     await callback.message.delete()
 
     if history_log:
-        await callback.message.answer(history_log)
+        for x in range(0, len(history_log), 4096):
+            await callback.message.answer(f'{history_log[x:x + 4096]}')
     else:
         await callback.message.answer('Вчера у Вас не было запросов.')
 
@@ -82,7 +84,8 @@ async def check_in_date(callback_query: CallbackQuery, callback_data: dict, stat
         param = 'custom'
         history_log = await search_user_action(user_id=callback_query.from_user.id, param=param, date_user=date)
         if history_log:
-            await callback_query.message.answer(history_log)
+            for x in range(0, len(history_log), 4096):
+                await callback_query.message.answer(f'{history_log[x:x + 4096]}')
         else:
             await callback_query.message.answer(f'{date.date()} у Вас не было запросов.')
         await state.set_state(state=None)
@@ -100,7 +103,8 @@ async def history_custom(callback: types.CallbackQuery) -> None:
     await callback.message.delete()
 
     if history_log:
-        await callback.message.answer(history_log)
+        for x in range(0, len(history_log), 4096):
+            await callback.message.answer(f'{history_log[x:x + 4096]}')
     else:
         await callback.message.answer('У Вас еще не было запросов.')
 

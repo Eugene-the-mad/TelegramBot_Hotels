@@ -16,7 +16,7 @@ def found_cities(values: dict[str, Any]) -> dict[str, str]:
     return {
         val['regionNames']['fullName']: val['gaiaId']
         for val in all_city_find
-        if val['type'] == 'CITY'
+        if val['type'] == 'CITY' or val['type'] == 'NEIGHBORHOOD'
     }
 
 
@@ -136,3 +136,27 @@ def policies(val: Any) -> str:
         content = 'на сайте нет информации'
 
     return content
+
+
+def output_children(children: dict[Any, Any]) -> str:
+    """
+    Функция, принимающая словарь с сохраненными данными в памяти и форматирующуя текст для
+    корректного вывода количества и возраста детей.
+    :param children: dict[Any, Any] - словарь всех данных, занесенных в память
+    :return: str - отформатированная строка
+    """
+    if children.get('num_childs') == 0:
+
+        return 'без детей'
+
+    else:
+        age_list = [
+            (
+                f'{num}-го ребёнка {age} год(а)'
+                if age in [1, 2, 3, 4]
+                else f'{num}-го ребёнка {age} лет'
+            )
+            for num, age in children['age_children'].items()
+        ]
+
+        return f'{children.get("num_childs")}, возраст {", ".join(age_list)}'

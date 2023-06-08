@@ -5,5 +5,6 @@ __all__ = [
     'beautiful_date',
     'found_hotels',
     'hotels_info',
-    'policies'
+    'policies',
+    'output_children'
 ]

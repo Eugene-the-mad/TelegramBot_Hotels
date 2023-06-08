@@ -1,5 +1,4 @@
 import asyncio
-
 import aiogram.exceptions
 from aiogram import types, Router
 from aiogram.filters.command import Command
@@ -152,6 +151,10 @@ async def check_in_date(callback_query: CallbackQuery, callback_data: dict, stat
                     'Укажите количество персон для заселения:',
                     reply_markup=num_person()
                 )
+                if data_mem['sort_price'] == 'custom':
+                    await state.set_state(UserState.children)
+                else:
+                    await state.set_state(UserState.not_children)
             else:
                 await callback_query.message.edit_text(
                     '<b>Видимо, ошиблись.</b> Дата выселения должна быть позже даты заселения.\n'
@@ -160,11 +163,11 @@ async def check_in_date(callback_query: CallbackQuery, callback_data: dict, stat
                 )
 
 
-@router.callback_query(Text(startswith='person'))
+@router.callback_query(UserState.not_children, Text(startswith='person'))
 async def check_person(callback: types.CallbackQuery, state: FSMContext) -> None:
     """
     Этот обработчик будет вызываться после нажатия на инлайн-кнопку количества персон для заселения.
-    Запрашивает у пользователя ввести количество показываемых отелей.
+    Запрашивает у пользователя ввести количество отелей для показа.
     """
     num_pers = callback.data.split('_')[1]
     await state.update_data(num_pers=num_pers)
@@ -275,6 +278,7 @@ async def hotels_find_low(callback: types.CallbackQuery, state: FSMContext) -> N
             "rooms": [
                 {
                     "adults": int(all_data["num_pers"]),
+                    "children": []
                 }
             ],
             "resultsStartingIndex": 0,
