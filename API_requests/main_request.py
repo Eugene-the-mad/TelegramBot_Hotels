@@ -45,12 +45,20 @@ def post_request(url: str, params: dict[Any, Any], headers: dict[str, str]) -> d
 def current_rate_USD() -> int:
     """ Функция выполнения API запроса на текущий курс доллара к рублю """
     key_api = config.currencyconverterapi.get_secret_value()
+    used_servers = 'free.currconv.com'
+    # для премиальных серверов:
+    # used_servers = 'api.currconv.com'
+    # для предоплаченных серверов:
+    # used_servers = 'prepaid.currconv.com'
+
     data = requests.get(
-        f'https://free.currconv.com/api/v7/convert?q=USD_RUB&compact=ultra&apiKey={key_api}'
+        f'https://{used_servers}/api/v7/convert?q=USD_RUB&compact=ultra&apiKey={key_api}'
     )
     if data.status_code == requests.codes.ok:
         return data.json()['USD_RUB']
     elif data.status_code == 400:
-        print('Ваш токен к "currencyconverterapi.com" не верный. Проверьте его ещё раз либо запросите новый. '
+        print('Ваш ключ к "currencyconverterapi.com" не верный. Проверьте его ещё раз либо запросите новый. '
               'Расчёт курса будет вестись по среднему значению равному 1 к 60.')
+        return 60
+    else:
         return 60
