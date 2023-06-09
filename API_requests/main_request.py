@@ -1,5 +1,5 @@
 import requests
-from typing import Any
+from typing import Any, Union
 from config_data.config import config
 
 
@@ -16,7 +16,7 @@ def api_requests(method_endswith: str, method: str, params: dict[Any, Any]):
         return post_request(url, params, headers)
 
 
-def get_request(url: str, params: dict[Any, Any], headers: dict[str, str]) -> dict[Any, Any]:
+def get_request(url: str, params: dict[Any, Any], headers: dict[str, str]) -> Union[dict[Any, Any], int]:
     """ Функция выполнения get API запросов """
     req = requests.get(
         url=url,
@@ -26,6 +26,8 @@ def get_request(url: str, params: dict[Any, Any], headers: dict[str, str]) -> di
     )
     if req.status_code == requests.codes.ok:
         return req.json()
+    else:
+        return req.status_code
 
 
 def post_request(url: str, params: dict[Any, Any], headers: dict[str, str]) -> dict[Any, Any]:
@@ -45,6 +47,10 @@ def current_rate_USD() -> int:
     key_api = config.currencyconverterapi.get_secret_value()
     data = requests.get(
         f'https://free.currconv.com/api/v7/convert?q=USD_RUB&compact=ultra&apiKey={key_api}'
-    ).json()
-
-    return data['USD_RUB']
+    )
+    if data.status_code == requests.codes.ok:
+        return data.json()['USD_RUB']
+    elif data.status_code == 400:
+        print('Ваш токен к "currencyconverterapi.com" не верный. Проверьте его ещё раз либо запросите новый. '
+              'Расчёт курса будет вестись по среднему значению равному 1 к 60.')
+        return 60

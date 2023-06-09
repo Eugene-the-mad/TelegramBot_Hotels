@@ -65,8 +65,8 @@ async def send_city(message: types.Message, state: FSMContext) -> None:
         )
         await message.chat.delete_message(message_id=waiting.message_id)
 
-        if not search_city:
-            await err_end(message, state)
+        if not search_city or search_city == 403:
+            await err_end(message, state, code=403)
 
         else:
             if search_city['rc'] == 'GOOGLE_AUTOCOMPLETE':
@@ -465,7 +465,7 @@ async def return_start(callback: types.CallbackQuery, state: FSMContext) -> None
     )
 
 
-async def err_end(message: types.Message | types.CallbackQuery, state: FSMContext) -> None:
+async def err_end(message: types.Message | types.CallbackQuery, state: FSMContext, code: int = None) -> None:
     """
     Функция, при вызове которой выводится пользователю предупреждающее сообщение об ошибке на сервере
     при запросе. Очищает FSM состояния, сохраняет в БД информацию об просмотренных отелях если она имеется
@@ -475,9 +475,12 @@ async def err_end(message: types.Message | types.CallbackQuery, state: FSMContex
     if 'hotels_review' in all_data.keys():
         hotels_names = 'Просмотренные отели: ' + ', '.join(all_data['hotels_review'])
         await insert_user_action((message.from_user.id, datetime.datetime.now(), hotels_names))
+
     await state.clear()
     warning_emoji = '\U00002757'
     await message.answer(warning_emoji)
+    if code == 403:
+        print('Неверный ключ авторизации к Hotels API. Проверьте его еще раз, либо запросите новый ключ')
     await message.answer(
         '<b>Что-то пошло не так. Ошибка на сервере hotels. Попробуйте еще раз или чуть позже.</b>'
         )
