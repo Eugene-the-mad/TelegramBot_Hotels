@@ -80,13 +80,13 @@ def current_rate_USD() -> int:
 
 ### Скриншоты работы бота
 ***
-![](images\scene1.png)
+![](images/scene1.png)
 
-![](images\scene2.png)
+![](images/scene2.png)
 
-![](images\scene3.png)
+![](images/scene3.png)
 
-![](images\scene4.png)
+![](images/scene4.png)
 
 ## 4. Контактная информация
 ***
